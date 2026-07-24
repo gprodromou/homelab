@@ -1,0 +1,22 @@
+- Infrastructure:
+    - Homepage:
+        icon: mdi-view-dashboard-#38bdf8
+        href: http://dashboard.local/
+        description: Dashboard
+    - Portainer:
+        icon: portainer.svg
+        href: http://portainer.local/
+        description: Docker Management
+    - Nginx Proxy Manager:
+        icon: nginx-proxy-manager.svg
+        href: http://192.168.0.45:81/
+        description: Domains & Proxy Management
+    - AdGuard Home:
+        icon: adguard-home.svg
+        href: http://adguard.local/
+        description: Network Ad-Blocker
+- Media:
+    - Plex:
+        icon: plex.svg
+        href: http://192.168.0.45:32400/web
+        description: Media Server

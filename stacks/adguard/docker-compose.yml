@@ -1,0 +1,14 @@
+version: "3.3"
+services:
+  adguard:
+    image: adguard/adguardhome:latest
+    container_name: adguard
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      - 3001:3000/tcp
+      - 8080:80/tcp
+    volumes:
+      - /home/george/adguard/work:/opt/adguardhome/work
+      - /home/george/adguard/conf:/opt/adguardhome/conf
+    restart: unless-stopped
