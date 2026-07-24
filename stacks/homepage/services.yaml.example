@@ -9,14 +9,41 @@
         description: Docker Management
     - Nginx Proxy Manager:
         icon: nginx-proxy-manager.svg
-        href: http://192.168.0.45:81/
+        href: http://npm.local/
         description: Domains & Proxy Management
     - AdGuard Home:
         icon: adguard-home.svg
         href: http://adguard.local/
         description: Network Ad-Blocker
+        widget:
+          type: adguard
+          url: http://192.168.0.45:8080
+          username: CHANGEME
+          password: CHANGEME
+
+- Downloads:
+    - Deluge:
+        icon: deluge.svg
+        href: http://deluge.local/
+        description: Torrent Client (VPN)
+        widget:
+          type: deluge
+          url: http://192.168.0.45:8112
+          password: CHANGEME
+    - Gluetun:
+        icon: gluetun.svg
+        href: http://192.168.0.45:8001
+        description: VPN Gateway
+        widget:
+          type: gluetun
+          url: http://192.168.0.45:8001
+
 - Media:
     - Plex:
         icon: plex.svg
-        href: http://192.168.0.45:32400/web
+        href: http://plex.local/
         description: Media Server
+        widget:
+          type: plex
+          url: http://192.168.0.45:32400
+          key: CHANGEME
