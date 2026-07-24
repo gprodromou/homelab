@@ -1,4 +1,3 @@
-version: "3"
 services:
   plex:
     image: lscr.io/linuxserver/plex:latest
@@ -11,6 +10,6 @@ services:
       - VERSION=docker
     volumes:
       - /home/george/plex/config:/config
-      - /home/george/media/movies:/movies
-      - /home/george/media/tvshows:/tvshows
+      - /mnt/data_1tb/media/movies:/movies
+      - /mnt/data_1tb/media/tv:/tv
     restart: unless-stopped
