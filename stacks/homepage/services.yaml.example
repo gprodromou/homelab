@@ -39,6 +39,16 @@
           url: http://192.168.0.45:8001
 
 - Media:
+    - Jellyfin:
+        icon: jellyfin.svg
+        href: http://jellyfin.local/
+        description: Media Server
+        widget:
+          type: jellyfin
+          url: http://192.168.0.45:8096
+          key: CHANGEME
+          enableBlocks: true
+          enableNowPlaying: true
     - Plex:
         icon: plex.svg
         href: http://plex.local/
