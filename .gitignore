@@ -16,3 +16,4 @@ stacks/downloads/qbittorrent/
 *.pem
 *.bak
 .DS_Store
+stacks/homepage/services.yaml
