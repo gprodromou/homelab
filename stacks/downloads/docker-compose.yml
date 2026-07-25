@@ -12,12 +12,11 @@ services:
       - 6881:6881
       - 6881:6881/udp
     environment:
-      - VPN_SERVICE_PROVIDER=nordvpn
-      - VPN_TYPE=openvpn
-      - OPENVPN_PROTOCOL=tcp
+      - VPN_SERVICE_PROVIDER=private internet access
       - OPENVPN_USER=${OPENVPN_USER}
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
-      - SERVER_COUNTRIES=${SERVER_COUNTRIES}
+      - SERVER_REGIONS=${SERVER_REGIONS}
+      - VPN_PORT_FORWARDING=on
       - TZ=${TZ}
       - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/24
     volumes:

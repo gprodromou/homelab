@@ -17,3 +17,5 @@ stacks/downloads/qbittorrent/
 *.bak
 .DS_Store
 stacks/homepage/services.yaml
+scripts/pia-port-sync.sh
+scripts/*.log
