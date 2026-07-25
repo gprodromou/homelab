@@ -57,3 +57,7 @@
           type: plex
           url: http://192.168.0.45:32400
           key: CHANGEME
+    - Bazarr:
+        icon: bazarr.svg
+        href: http://192.168.0.45:6767
+        description: Subtitles
