@@ -1,9 +1,17 @@
 #!/bin/bash
-set -euo pipefail
+set -uo pipefail
 
 DEST="/mnt/data_1tb/backups"
 STAMP=$(date +%Y%m%d-%H%M)
 KEEP=7
+DISCORD_WEBHOOK="YOUR_DISCORD_WEBHOOK_URL"
+
+notify() {
+  curl -s -H "Content-Type: application/json" \
+    -d "{\"content\":\"$1\"}" "$DISCORD_WEBHOOK" > /dev/null 2>&1
+}
+
+trap 'notify "⚠️ Homelab backup FAILED on $(hostname) at $(date +%H:%M)"' ERR
 
 mkdir -p "$DEST"
 
@@ -26,3 +34,5 @@ ls -1t "$DEST"/portainer-*.tar.gz 2>/dev/null | tail -n +8 | xargs -r sudo rm --
 sudo chown -R george:george "$DEST"
 echo "[OK] Backup complete:"
 ls -lh "$DEST"
+
+notify "✅ Homelab backup OK — $(du -sh "$DEST" | cut -f1) total, $(date '+%Y-%m-%d %H:%M')"
