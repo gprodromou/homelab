@@ -20,3 +20,4 @@ stacks/homepage/services.yaml
 scripts/pia-port-sync.sh
 scripts/*.log
 scripts/backup.sh
+stacks/filebrowser/data/

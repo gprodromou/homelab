@@ -1,0 +1,17 @@
+server:
+  port: 80
+  sources:
+    - path: /srv/downloads
+      name: Downloads
+      config:
+        defaultEnabled: true
+    - path: /srv/media
+      name: Media
+      config:
+        defaultEnabled: true
+auth:
+  adminUsername: admin
+  adminPassword: CHANGEME
+  methods:
+    password:
+      enabled: true

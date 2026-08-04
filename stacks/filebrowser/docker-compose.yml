@@ -1,0 +1,14 @@
+services:
+  filebrowser:
+    image: gtstef/filebrowser:latest
+    container_name: filebrowser
+    user: "1000:1000"
+    environment:
+      - FILEBROWSER_CONFIG=/home/filebrowser/data/config.yaml
+    volumes:
+      - ./data:/home/filebrowser/data
+      - /mnt/data_500gb/downloads:/srv/downloads
+      - /mnt/data_1tb/media:/srv/media
+    ports:
+      - 8082:80
+    restart: unless-stopped
