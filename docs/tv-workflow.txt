@@ -1,31 +1,53 @@
 ========================================================================
-  HOW TO ADD A TV SEASON TO PLEX
-  Quick reference — homelab media server
+  MEDIA SERVER — DOWNLOAD & CLEANUP GUIDE
+  homelab quick reference
 ========================================================================
 
-Full flow: download in Deluge -> organize with script -> scan in Plex.
+Two types of downloads, handled differently:
+
+  MOVIES  -> download with label "movies" -> appears in Plex directly
+  SERIES  -> download with label "tv" -> run the organizer script -> Plex
+
 The server does all the work; you just kick off each step.
 
+
+########################################################################
+#  MOVIES  (the simple case)
+########################################################################
+
+1. Deluge (http://deluge.local): add torrent, set label = movies, wait 100%.
+2. Plex (http://plex.local): Movies library -> "..." -> Scan Library Files.
+3. It appears. Done.
+
+Movies download straight into the Plex library, so nothing else is needed.
+
+DELETE A MOVIE WHEN DONE:
+  Deluge -> right-click the torrent -> "Remove With Data".
+  That's it — the file is gone and space is freed.
+  (Then optionally scan Plex so it drops from view.)
+
+
+########################################################################
+#  SERIES  (needs one organizing step)
+########################################################################
 
 ------------------------------------------------------------------------
 STEP 1 — DOWNLOAD IN DELUGE
 ------------------------------------------------------------------------
-
-1. Open Deluge:            http://deluge.local
-2. Click "Add" and paste the magnet link (or upload the .torrent).
-3. BEFORE it starts, set the label to:   tv
+1. Open http://deluge.local
+2. "Add" -> paste magnet link (or upload .torrent).
+3. Set the label to:   tv
       (right-click the torrent -> Label -> tv)
-4. Wait for it to reach 100%.
+4. Wait for 100%.
 
-   Tip: prefer 1080p releases. x265/HEVC plays fine on your TVs,
-   but if a file ever stutters, grab an x264/H.264 version instead.
+   Tip: 1080p releases. x265/HEVC plays fine on your TVs; if a file
+   ever stutters on some device, grab an x264/H.264 version instead.
 
 
 ------------------------------------------------------------------------
 STEP 2 — CONNECT TO THE SERVER
 ------------------------------------------------------------------------
-
-Open Terminal on the Mac and run:
+Open Terminal on the Mac:
 
     ssh george@192.168.0.45
 
@@ -33,102 +55,109 @@ Open Terminal on the Mac and run:
 ------------------------------------------------------------------------
 STEP 3 — FIND THE EXACT FOLDER NAME
 ------------------------------------------------------------------------
-
-List what's in the TV folder to get the exact download folder name:
-
     ls "/mnt/data_1tb/media/tv/"
 
-Copy the folder name of the season you just downloaded
+Copy the download folder's exact name
 (e.g.  Some Show 2026 S01 1080p WEB x264-GROUP ).
 
 
 ------------------------------------------------------------------------
 STEP 4 — PREVIEW WHAT THE SCRIPT WILL DO (safe, changes nothing)
 ------------------------------------------------------------------------
-
-Run the organizer in DRY-RUN mode (paste the folder name in quotes):
-
     ~/homelab/scripts/organize-series.sh "PASTE FOLDER NAME HERE"
 
-It prints the plan: detected show, year, and where each episode goes.
-Nothing is moved yet. Check that the show name / season look correct.
+Prints the plan: detected show, year, where each episode goes.
+Nothing moves yet. Check the show name / season look right.
 
 
 ------------------------------------------------------------------------
 STEP 5 — RUN IT FOR REAL
 ------------------------------------------------------------------------
-
-If the plan looked right, run the same command with  --go  :
-
     ~/homelab/scripts/organize-series.sh --go "PASTE FOLDER NAME HERE"
 
-This creates:   Show Name (Year)/Season 0X/  ... and moves the episodes
-in, then deletes the empty download folder.
+Creates  Show Name (Year)/Season 0X/  , moves the episodes in,
+and deletes the empty download folder.
 
 
 ------------------------------------------------------------------------
 STEP 6 — REMOVE THE TORRENT FROM DELUGE
 ------------------------------------------------------------------------
+Moving the files breaks the seed, so Deluge shows an "error" for it.
+That's expected. Clean it up:
 
-Moving the files breaks the seed, so Deluge will show an error for it.
-Clean it up:
-
-  Open http://deluge.local
-  -> right-click the torrent
-  -> Remove
-     (choose "Remove With Data" only if any leftover junk files remain;
-      the video files are already moved, so either option is fine)
+  http://deluge.local -> right-click the torrent -> "Remove"
+  (no data needed — the video files are already moved to the library)
 
 
 ------------------------------------------------------------------------
 STEP 7 — SCAN THE LIBRARY IN PLEX
 ------------------------------------------------------------------------
-
-1. Open Plex:   http://plex.local
-2. Hover over the "TV Shows" library in the left sidebar.
-3. Click the  "..."  menu -> "Scan Library Files".
-4. Wait 30-60 seconds, then refresh.
-
-The show should appear with poster and episode info.
+1. http://plex.local
+2. Hover the "TV Shows" library -> "..." -> "Scan Library Files".
+3. Wait 30-60s, refresh. The show appears with poster + episodes.
 
 
 ------------------------------------------------------------------------
-IF THE SHOW DOESN'T APPEAR AFTER SCANNING
+DELETE A SERIES WHEN DONE  (frees disk space)
 ------------------------------------------------------------------------
-
-Brand-new shows sometimes fail to auto-match. Try, in order:
-
-  a) Wait a minute and scan again (Step 7). Often it just needs a moment.
-
-  b) Confirm Plex can see the files (should list them):
-
-       docker exec plex ls "/tv/SHOW NAME (YEAR)/Season 01/"
-
-  c) In Plex, if the folder shows as unmatched:
-       click the show -> "..." -> "Match" -> search the title -> pick it.
-
-
-------------------------------------------------------------------------
-WHEN YOU'RE DONE WATCHING
-------------------------------------------------------------------------
-
-To free up disk space, delete the show folder from the server:
+The series files live in the Plex library (1 TB disk), NOT in Deluge —
+so you delete them directly:
 
     rm -rf "/mnt/data_1tb/media/tv/SHOW NAME (YEAR)"
 
-Then scan Plex again (Step 7) so it drops the removed show.
+  Example:
+    rm -rf "/mnt/data_1tb/media/tv/I Will Find You (2026)"
+
+Then scan Plex again (Step 7) so it drops the removed show from view.
+
+  (If you already removed the torrent in Step 6, there's nothing left
+   in Deluge to clean up. If not, remove it now too.)
 
 
-========================================================================
-  QUICK VERSION (once you're comfortable)
-========================================================================
+------------------------------------------------------------------------
+IF A NEW SHOW DOESN'T APPEAR AFTER SCANNING
+------------------------------------------------------------------------
+Brand-new shows sometimes fail to auto-match. Try, in order:
 
-  1. Deluge: add torrent, label = tv, wait for 100%
+  a) Wait a minute and scan again (Step 7).
+
+  b) Confirm Plex can see the files (should list them):
+       docker exec plex ls "/tv/SHOW NAME (YEAR)/Season 01/"
+
+  c) In Plex, if the folder shows unmatched:
+       click the show -> "..." -> "Match" -> search the title -> pick it.
+
+
+########################################################################
+#  ONE-TIME SAFETY SETTING (set once, then forget)
+########################################################################
+
+Keep Plex from ever deleting your files itself:
+
+  Plex -> Settings -> Library -> "Allow media deletion" -> OFF
+
+With this OFF, Plex only DISPLAYS your files, never deletes them.
+You stay in full control: deletion happens only via Deluge
+("Remove With Data" for movies) or  rm  (for series).
+
+
+########################################################################
+#  QUICK VERSION (once it's muscle memory)
+########################################################################
+
+MOVIE:
+  1. Deluge: add, label = movies, wait 100%
+  2. Plex: Movies -> ... -> Scan
+  Delete: Deluge -> Remove With Data
+
+SERIES:
+  1. Deluge: add, label = tv, wait 100%
   2. ssh george@192.168.0.45
   3. ls "/mnt/data_1tb/media/tv/"
   4. ~/homelab/scripts/organize-series.sh "FOLDER"        (preview)
   5. ~/homelab/scripts/organize-series.sh --go "FOLDER"   (do it)
   6. Deluge: remove the torrent
-  7. Plex: TV Shows -> ... -> Scan Library Files
+  7. Plex: TV Shows -> ... -> Scan
+  Delete: rm -rf "/mnt/data_1tb/media/tv/SHOW (YEAR)"  + scan Plex
 
 ========================================================================
