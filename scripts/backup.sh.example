@@ -16,7 +16,7 @@ trap 'notify "⚠️ Homelab backup FAILED on $(hostname) at $(date +%H:%M)"' ER
 mkdir -p "$DEST"
 
 echo "[*] Stopping containers..."
-docker stop plex deluge homepage >/dev/null 2>&1 || true
+docker stop plex deluge homepage prowlarr sonarr radarr bazarr >/dev/null 2>&1 || true
 
 echo "[*] Archiving configs..."
 sudo tar czf "$DEST/homelab-$STAMP.tar.gz" -C /home/george homelab homepage plex --exclude='homelab/.git' 2>/dev/null || true
@@ -25,7 +25,7 @@ echo "[*] Archiving portainer data..."
 sudo tar czf "$DEST/portainer-$STAMP.tar.gz" -C /var/lib/docker/volumes portainer_data 2>/dev/null || true
 
 echo "[*] Restarting containers..."
-docker start plex deluge homepage >/dev/null 2>&1 || true
+docker start plex deluge homepage prowlarr sonarr radarr bazarr >/dev/null 2>&1 || true
 
 echo "[*] Pruning old backups..."
 ls -1t "$DEST"/homelab-*.tar.gz 2>/dev/null | tail -n +8 | xargs -r sudo rm --

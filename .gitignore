@@ -23,3 +23,7 @@ scripts/backup.sh
 stacks/filebrowser/data/
 stacks/tailscale/.env
 stacks/tailscale/state/
+
+# arr stack configs (contain API keys and indexer credentials)
+stacks/arr/*/config/
+stacks/bazarr/config/

@@ -1,0 +1,26 @@
+#!/bin/bash
+# Reads PIA forwarded port from gluetun and sets it in Deluge
+
+GLUETUN_URL="http://192.168.0.45:8001/v1/portforward"
+DELUGE_URL="http://192.168.0.45:8112/json"
+DELUGE_PASS="YOUR_DELUGE_PASSWORD"
+
+PORT=$(curl -s "$GLUETUN_URL" | grep -o '"port":[0-9]*' | head -1 | cut -d: -f2)
+
+if [ -z "$PORT" ]; then
+  echo "$(date) - could not read port from gluetun"
+  exit 1
+fi
+
+# Login to Deluge and get session cookie
+COOKIE=$(curl -s -c - -X POST "$DELUGE_URL" \
+  -H "Content-Type: application/json" \
+  -d "{\"method\":\"auth.login\",\"params\":[\"$DELUGE_PASS\"],\"id\":1}" \
+  | grep -o '_session_id[[:space:]].*' | awk '{print $NF}')
+
+# Set the listen port
+curl -s -b "_session_id=$COOKIE" -X POST "$DELUGE_URL" \
+  -H "Content-Type: application/json" \
+  -d "{\"method\":\"core.set_config\",\"params\":[{\"listen_ports\":[$PORT,$PORT],\"random_port\":false}],\"id\":2}" > /dev/null
+
+echo "$(date) - Deluge listen port set to $PORT"

@@ -8,8 +8,13 @@ services:
       - TZ=Asia/Nicosia
     volumes:
       - ./config:/config
-      - /mnt/data_1tb/media/movies:/movies
-      - /mnt/data_1tb/media/tv:/tv
+      - /mnt/data_1tb/media:/media
     ports:
       - 6767:6767
+    networks:
+      - arrnet
     restart: unless-stopped
+
+networks:
+  arrnet:
+    external: true
