@@ -18,8 +18,12 @@
         widget:
           type: adguard
           url: http://192.168.0.45:8080
-          username: CHANGEME
-          password: CHANGEME
+          username: george
+          password: YOUR_ADGUARD_PASSWORD
+    - File Browser:
+        icon: filebrowser-quantum.png
+        href: http://192.168.0.45:8082/
+        description: File Manager
 
 - Downloads:
     - Deluge:
@@ -29,7 +33,31 @@
         widget:
           type: deluge
           url: http://192.168.0.45:8112
-          password: CHANGEME
+          password: YOUR_DELUGE_PASSWORD
+    - Prowlarr:
+        icon: prowlarr.svg
+        href: http://192.168.0.45:9696
+        description: Indexer Manager
+        widget:
+          type: prowlarr
+          url: http://192.168.0.45:9696
+          key: YOUR_PROWLARR_API_KEY
+    - Sonarr:
+        icon: sonarr.svg
+        href: http://192.168.0.45:8989
+        description: TV Series
+        widget:
+          type: sonarr
+          url: http://192.168.0.45:8989
+          key: YOUR_SONARR_API_KEY
+    - Radarr:
+        icon: radarr.svg
+        href: http://192.168.0.45:7878
+        description: Movies
+        widget:
+          type: radarr
+          url: http://192.168.0.45:7878
+          key: YOUR_RADARR_API_KEY
     - Gluetun:
         icon: gluetun.svg
         href: http://192.168.0.45:8001
@@ -46,8 +74,12 @@
         widget:
           type: plex
           url: http://192.168.0.45:32400
-          key: CHANGEME
+          key: YOUR_PLEX_TOKEN
     - Bazarr:
         icon: bazarr.svg
         href: http://192.168.0.45:6767
         description: Subtitles
+        widget:
+          type: bazarr
+          url: http://192.168.0.45:6767
+          key: YOUR_BAZARR_API_KEY
