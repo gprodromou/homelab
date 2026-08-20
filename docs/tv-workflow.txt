@@ -1,163 +1,253 @@
 ========================================================================
-  MEDIA SERVER — DOWNLOAD & CLEANUP GUIDE
+  MEDIA SERVER — DOWNLOAD, SUBTITLE & CLEANUP GUIDE
   homelab quick reference
 ========================================================================
 
-Two types of downloads, handled differently:
+THREE WAYS TO GET SOMETHING INTO THE LIBRARY
+  A) MANUAL PICK + AUTO HANDLING  (the default — most control)
+  B) FULLY AUTOMATED              (best for ongoing weekly shows)
+  C) SCRIPT FALLBACK              (for what the *arrs can't match)
 
-  MOVIES  -> download with label "movies" -> appears in Plex directly
-  SERIES  -> download with label "tv" -> run the organizer script -> Plex
-
-The server does all the work; you just kick off each step.
+  Whichever you use: ONE SHOW, ONE PATH. Never mix them for the same
+  title, or you end up with duplicate files under two naming schemes.
 
 
-########################################################################
-#  MOVIES  (the simple case)
-########################################################################
+WHERE THINGS LIVE
+  Deluge     http://deluge.local            real download progress
+  Prowlarr   http://192.168.0.45:9696       indexers (syncs to both apps)
+  Sonarr     http://192.168.0.45:8989       TV
+  Radarr     http://192.168.0.45:7878       movies
+  Bazarr     http://192.168.0.45:6767       subtitles
+  Plex       http://plex.local              playback
+  Dashboard  https://<your-server>.ts.net
 
-1. Deluge (http://deluge.local): add torrent, set label = movies, wait 100%.
-2. Plex (http://plex.local): Movies library -> "..." -> Scan Library Files.
-3. It appears. Done.
-
-Movies download straight into the Plex library, so nothing else is needed.
-
-DELETE A MOVIE WHEN DONE:
-  Deluge -> right-click the torrent -> "Remove With Data".
-  That's it — the file is gone and space is freed.
-  (Then optionally scan Plex so it drops from view.)
+  NOTE: Sonarr's queue does NOT show download progress. Only Deluge does.
 
 
 ########################################################################
-#  SERIES  (needs one organizing step)
+#  A) MANUAL PICK + AUTO HANDLING   (default)
 ########################################################################
 
-------------------------------------------------------------------------
-STEP 1 — DOWNLOAD IN DELUGE
-------------------------------------------------------------------------
-1. Open http://deluge.local
-2. "Add" -> paste magnet link (or upload .torrent).
-3. Set the label to:   tv
-      (right-click the torrent -> Label -> tv)
-4. Wait for 100%.
-
-   Tip: 1080p releases. x265/HEVC plays fine on your TVs; if a file
-   ever stutters on some device, grab an x264/H.264 version instead.
-
+You choose the release; the stack does the organising and subtitles.
+Worth it because a human reading seeder counts beats an automatic
+search that ranks by quality and can't see swarm health.
 
 ------------------------------------------------------------------------
-STEP 2 — CONNECT TO THE SERVER
+1. FIND AND DOWNLOAD
 ------------------------------------------------------------------------
-Open Terminal on the Mac:
+  Deluge -> Add -> paste magnet.
+  Label:  tv-sonarr     (series)
+          movies-radarr (films)
 
-    ssh george@192.168.0.45
+  These labels leave the file on the 500 GB disk so Sonarr/Radarr can
+  import it. Do NOT use the plain `tv` / `movies` labels here — those
+  write straight into the library and bypass the *arr apps entirely.
 
-
-------------------------------------------------------------------------
-STEP 3 — FIND THE EXACT FOLDER NAME
-------------------------------------------------------------------------
-    ls "/mnt/data_1tb/media/tv/"
-
-Copy the download folder's exact name
-(e.g.  Some Show 2026 S01 1080p WEB x264-GROUP ).
-
+  Wait for 100%.
 
 ------------------------------------------------------------------------
-STEP 4 — PREVIEW WHAT THE SCRIPT WILL DO (safe, changes nothing)
+2. ADOPT IT
 ------------------------------------------------------------------------
-    ~/homelab/scripts/organize-series.sh "PASTE FOLDER NAME HERE"
+  Sonarr -> Wanted -> Manual Import      (or Radarr -> Movies -> Manual Import)
+  Browse to  /downloads/tv-sonarr/  (or /downloads/movies-radarr/)
+  Pick the series/film it belongs to, confirm the episode mapping,
+  and import.
 
-Prints the plan: detected show, year, where each episode goes.
-Nothing moves yet. Check the show name / season look right.
-
-
-------------------------------------------------------------------------
-STEP 5 — RUN IT FOR REAL
-------------------------------------------------------------------------
-    ~/homelab/scripts/organize-series.sh --go "PASTE FOLDER NAME HERE"
-
-Creates  Show Name (Year)/Season 0X/  , moves the episodes in,
-and deletes the empty download folder.
-
+  If the show isn't in Sonarr yet, add it first:
+  Series -> Add New -> search -> Monitor: None -> Add.
 
 ------------------------------------------------------------------------
-STEP 6 — REMOVE THE TORRENT FROM DELUGE
+3. SUBTITLES HAPPEN BY THEMSELVES
 ------------------------------------------------------------------------
-Moving the files breaks the seed, so Deluge shows an "error" for it.
-That's expected. Clean it up:
+  Bazarr picks up anything Sonarr/Radarr manage and searches for
+  English + Greek. Nothing to do.
 
-  http://deluge.local -> right-click the torrent -> "Remove"
-  (no data needed — the video files are already moved to the library)
+  Check progress: Bazarr -> Series / Movies
+  Outstanding items sit in Bazarr -> Wanted and get retried on a
+  schedule. Greek coverage is thinner than English — that's the
+  subtitle ecosystem, not a misconfiguration.
 
-
-------------------------------------------------------------------------
-STEP 7 — SCAN THE LIBRARY IN PLEX
-------------------------------------------------------------------------
-1. http://plex.local
-2. Hover the "TV Shows" library -> "..." -> "Scan Library Files".
-3. Wait 30-60s, refresh. The show appears with poster + episodes.
-
+  To force a search for one item:
+  Bazarr -> open the series -> magnifying glass on the episode.
 
 ------------------------------------------------------------------------
-DELETE A SERIES WHEN DONE  (frees disk space)
+4. PLEX
 ------------------------------------------------------------------------
-The series files live in the Plex library (1 TB disk), NOT in Deluge —
-so you delete them directly:
+  Plex -> the library -> "..." -> Scan Library Files.
+  (Or wait for its own scan timer.)
 
-    rm -rf "/mnt/data_1tb/media/tv/SHOW NAME (YEAR)"
-
-  Example:
-    rm -rf "/mnt/data_1tb/media/tv/I Will Find You (2026)"
-
-Then scan Plex again (Step 7) so it drops the removed show from view.
-
-  (If you already removed the torrent in Step 6, there's nothing left
-   in Deluge to clean up. If not, remove it now too.)
-
-
-------------------------------------------------------------------------
-IF A NEW SHOW DOESN'T APPEAR AFTER SCANNING
-------------------------------------------------------------------------
-Brand-new shows sometimes fail to auto-match. Try, in order:
-
-  a) Wait a minute and scan again (Step 7).
-
-  b) Confirm Plex can see the files (should list them):
-       docker exec plex ls "/tv/SHOW NAME (YEAR)/Season 01/"
-
-  c) In Plex, if the folder shows unmatched:
-       click the show -> "..." -> "Match" -> search the title -> pick it.
+  Subtitles do NOT auto-enable on playback. In the player, click the
+  subtitle icon and pick a track. To make them default:
+  Plex -> Settings -> Account -> Languages -> preferred subtitle
+  language + "Always enabled".
 
 
 ########################################################################
-#  ONE-TIME SAFETY SETTING (set once, then forget)
+#  B) FULLY AUTOMATED
 ########################################################################
 
-Keep Plex from ever deleting your files itself:
+Best for shows that are still airing — you add it once and forget.
+
+  1. Sonarr -> Series -> Add New -> search the show
+  2. Root Folder: /media/tv
+     Monitor: choose deliberately —
+       "Future Episodes"  = only new ones as they air  (usually what you want)
+       "All Episodes"     = hunts the entire back catalogue immediately
+       "Pilot Episode"    = just S01E01, good for testing
+     Quality Profile: pick one
+  3. Add.
+
+  From then on Sonarr checks the indexers on a schedule, grabs, hands
+  to Deluge under `tv-sonarr`, imports, and Bazarr subtitles it.
+
+  Same in Radarr for films (Movies -> Add New).
+
+------------------------------------------------------------------------
+WHEN NOTHING DOWNLOADS
+------------------------------------------------------------------------
+Sonarr's queue will happily sit at empty-progress forever if the
+release it grabbed has no seeders. Check DELUGE, not Sonarr:
+  Deluge -> select the torrent -> Status tab
+  Name still a hash + Availability 0.000 + 0 seeds = dead release.
+
+Fix:
+  1. Sonarr -> Activity -> Queue -> X on the row
+     Removal Method:   Remove from Download Client
+     Blocklist Release: Blocklist and Search
+     (this blocks that release AND auto-searches for another)
+
+  2. If the retry also stalls, use INTERACTIVE SEARCH:
+     Sonarr -> the series -> click the EPISODE TITLE (not any icon)
+     -> "Search" tab.
+     This opens the full release table with a PEERS column.
+     Sort by it and pick something with real seeders.
+
+     (The magnifying glass on an episode ROW runs an *automatic*
+      search — it just shows a toast. It is not the interactive one.)
+
+  3. If every release on the page shows 0 seeders, the content simply
+     isn't being seeded. Old or obscure titles on public trackers are
+     the usual case. Nothing is broken.
+
+
+########################################################################
+#  C) SCRIPT FALLBACK  (organize-series.sh)
+########################################################################
+
+For series the *arr apps cannot match — Greek-language shows in
+particular are often missing from TheTVDB or listed under a title that
+defeats automatic matching.
+
+  1. Deluge: add torrent, label = tv, wait 100%
+     (plain `tv` — this one moves into the library directly)
+
+  2. ssh george@192.168.0.45
+
+  3. ls "/mnt/data_1tb/media/tv/"
+     copy the exact folder name
+
+  4. PREVIEW (changes nothing):
+     ~/homelab/scripts/organize-series.sh "PASTE FOLDER NAME"
+
+  5. RUN:
+     ~/homelab/scripts/organize-series.sh --go "PASTE FOLDER NAME"
+
+     Creates  Show Name (Year)/Season 0X/ , moves episodes in, removes
+     the empty download folder.
+
+  6. Deluge: remove the torrent (moving files breaks the seed — the
+     "error" state is expected). No data to delete; files are moved.
+
+  7. Plex: TV Shows -> "..." -> Scan Library Files
+
+  NOTE: Bazarr will NOT subtitle this — it only sees what Sonarr and
+  Radarr manage. Either accept manual .srt files, or use path A and
+  Manual Import instead.
+
+------------------------------------------------------------------------
+FOLDER STRUCTURE THE *ARRS EXPECT
+------------------------------------------------------------------------
+  /media/tv/Show Name (Year)/Season 01/episodes.mkv
+
+  ONE folder per SHOW, seasons nested inside. Season folders sitting at
+  the top level with the season in the name will be mis-matched — and
+  Sonarr imports wrong matches silently rather than flagging them.
+
+  ALWAYS review the Library Import preview table before committing.
+
+
+########################################################################
+#  DELETING THINGS
+########################################################################
+
+MOVIE downloaded manually (plain `movies` label, still seeding):
+  Deluge -> right-click -> "Remove With Data"
+
+ANYTHING IMPORTED BY SONARR/RADARR:
+  Sonarr -> the series -> Delete (tick "Delete Files")
+  Radarr -> the film -> Delete (tick "Delete Files")
+  Then remove the torrent from Deluge separately if still seeding.
+
+  Deleting in Sonarr WITHOUT ticking "Delete Files" removes only the
+  database entry and leaves the files alone — which is what you want
+  when fixing a bad match.
+
+SERIES ORGANISED BY THE SCRIPT:
+  rm -rf "/mnt/data_1tb/media/tv/SHOW NAME (YEAR)"
+
+Then scan Plex so it drops from view.
+
+
+########################################################################
+#  ONE-TIME SAFETY SETTING
+########################################################################
 
   Plex -> Settings -> Library -> "Allow media deletion" -> OFF
 
-With this OFF, Plex only DISPLAYS your files, never deletes them.
-You stay in full control: deletion happens only via Deluge
-("Remove With Data" for movies) or  rm  (for series).
+Plex then only DISPLAYS files, never deletes them. Deletion stays
+deliberate: via Deluge, via Sonarr/Radarr, or via rm.
 
 
 ########################################################################
-#  QUICK VERSION (once it's muscle memory)
+#  IF YOU CHANGE THE DELUGE PASSWORD
 ########################################################################
 
-MOVIE:
-  1. Deluge: add, label = movies, wait 100%
-  2. Plex: Movies -> ... -> Scan
-  Delete: Deluge -> Remove With Data
+It lives in FIVE places. Miss one and something breaks silently:
 
-SERIES:
+  1. Deluge itself (Preferences -> Interface)
+  2. ~/homelab/scripts/pia-port-sync.sh   line 6
+  3. ~/homepage/config/services.yaml      Deluge widget
+  4. Sonarr -> Settings -> Download Clients -> Deluge
+  5. Radarr -> Settings -> Download Clients -> Deluge
+
+Symptoms: Homepage shows "API Error", Sonarr/Radarr System -> Status
+shows "Unable to communicate with Deluge", port sync log stops updating.
+
+
+########################################################################
+#  QUICK VERSION
+########################################################################
+
+MANUAL PICK (default):
+  1. Deluge: add, label = tv-sonarr / movies-radarr, wait 100%
+  2. Sonarr/Radarr -> Manual Import -> point at /downloads/<label>/
+  3. Bazarr does subtitles automatically
+  4. Plex: scan
+
+AUTOMATED:
+  1. Sonarr/Radarr -> Add New -> set Monitor -> Add
+  2. Nothing else. Check Deluge if it seems stuck.
+
+NOTHING DOWNLOADING:
+  Check Deluge status (not Sonarr's queue).
+  Dead release -> Queue -> X -> Blocklist and Search.
+  Still dead -> click episode TITLE -> Search tab -> sort by Peers.
+
+SCRIPT FALLBACK (unmatched / Greek content):
   1. Deluge: add, label = tv, wait 100%
-  2. ssh george@192.168.0.45
-  3. ls "/mnt/data_1tb/media/tv/"
-  4. ~/homelab/scripts/organize-series.sh "FOLDER"        (preview)
-  5. ~/homelab/scripts/organize-series.sh --go "FOLDER"   (do it)
-  6. Deluge: remove the torrent
-  7. Plex: TV Shows -> ... -> Scan
-  Delete: rm -rf "/mnt/data_1tb/media/tv/SHOW (YEAR)"  + scan Plex
+  2. organize-series.sh "FOLDER"        (preview)
+  3. organize-series.sh --go "FOLDER"   (do it)
+  4. Deluge: remove torrent | Plex: scan
+  (no automatic subtitles on this path)
 
 ========================================================================
