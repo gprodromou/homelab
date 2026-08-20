@@ -12,7 +12,7 @@ Built and documented from scratch as a hands-on infrastructure project.
 
 This project turns an old desktop (Intel i5-3470, 16 GB RAM) into a self-sufficient media server. Everything runs in Docker containers orchestrated via Portainer, with each service isolated and independently configurable.
 
-The core design principle: **the server does the work 24/7, the client is just a remote control.** Downloads continue whether or not any personal device is on, and the entire stack is reachable securely from anywhere via a mesh VPN, without exposing anything to the public internet.
+The core design principle: the server does the work 24/7, the client is just a remote control. Downloads continue whether or not any personal device is on, and the entire stack is reachable securely from anywhere via a mesh VPN, without exposing anything to the public internet.
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
@@ -24,8 +24,8 @@ The core design principle: **the server does the work 24/7, the client is just a
 
 **Debian Host (headless):**
 
-- **Internet** enters through **gluetun** (PIA VPN with port forwarding)
-- **Deluge** runs inside gluetun's network, so no traffic can leave without the VPN
+- Internet enters through gluetun (PIA VPN with port forwarding)
+- Deluge runs inside gluetun's network, so no traffic can leave without the VPN
 - **Library automation:** Prowlarr, Sonarr, Radarr, Bazarr (shared `arrnet` bridge network)
 - **Media & files:** Plex, FileBrowser Quantum
 - **Network services:** AdGuard Home, Nginx Proxy Manager
@@ -68,19 +68,19 @@ The core design principle: **the server does the work 24/7, the client is just a
 
 ### VPN isolation (kill-switch by design)
 
-Deluge uses `network_mode: service:gluetun`, so it has **no network stack of its own**. If the VPN drops, Deluge has no route to the internet whatsoever. This isn't a kill-switch that "activates"; it's a structural impossibility to leak.
+Deluge uses `network_mode: service:gluetun`, so it has no network stack of its own. If the VPN drops, Deluge has no route to the internet whatsoever. This isn't a kill-switch that "activates"; it's a structural impossibility to leak.
 
 ![VPN isolation proof](docs/screenshots/VPN_isolation_proof.png)
 
 *The host's real IP (Cyprus) vs. the torrent client's IP (Netherlands, via PIA). Traffic is provably isolated.*
 
-PIA **port forwarding** is auto-synced to Deluge every 10 minutes via a cron script, improving download speeds without manual intervention.
+PIA port forwarding is auto-synced to Deluge every 10 minutes via a cron script, improving download speeds without manual intervention.
 
-**Scope note:** only Deluge sits behind the VPN, and deliberately so. BitTorrent is the only protocol here that broadcasts the client's IP to unknown third parties, since swarm participation is how the protocol works. Prowlarr, Sonarr, Radarr, and Bazarr make ordinary client-server HTTPS requests and never join a swarm, so routing them through the tunnel would add failure modes without addressing a real exposure.
+Scope note: only Deluge sits behind the VPN, and deliberately so. BitTorrent is the only protocol here that broadcasts the client's IP to unknown third parties, since swarm participation is how the protocol works. Prowlarr, Sonarr, Radarr, and Bazarr make ordinary client-server HTTPS requests and never join a swarm, so routing them through the tunnel would add failure modes without addressing a real exposure.
 
 ### Library automation (*arr stack)
 
-Prowlarr holds every indexer definition and pushes them to Sonarr and Radarr on a **Full Sync**. Add an indexer once, and both apps have it seconds later. Neither app is configured with indexers directly.
+Prowlarr holds every indexer definition and pushes them to Sonarr and Radarr on a Full Sync. Add an indexer once, and both apps have it seconds later. Neither app is configured with indexers directly.
 
 ![Prowlarr indexers](docs/screenshots/prowlarr_indexers.png)
 
@@ -92,7 +92,7 @@ Sonarr and Radarr then handle search, grab, import, and folder structure; Bazarr
 
 *Radarr managing the movie library: imported, monitored, and tracked.*
 
-**Path consistency is the load-bearing detail.** All five containers mount the same two host paths at the same container paths:
+Path consistency is the load-bearing detail. All five containers mount the same two host paths at the same container paths:
 
 ```
 /mnt/data_500gb/downloads : /downloads
@@ -101,7 +101,7 @@ Sonarr and Radarr then handle search, grab, import, and folder structure; Bazarr
 
 Because Deluge reports a completed file at exactly the path Sonarr expects to find it, no remote path mapping is needed anywhere in the stack. The single most common source of *arr import failures simply doesn't apply.
 
-**Deluge labels keep the two workflows separate:**
+Deluge labels keep the two workflows separate:
 
 | Label | Move-completed target | Owner |
 |-------|----------------------|-------|
@@ -113,35 +113,35 @@ The `*-sonarr` / `*-radarr` labels leave files on the download disk so the *arr 
 
 ### Automatic subtitles
 
-Bazarr syncs its library from Sonarr and Radarr, then searches OpenSubtitles.com, TVSubtitles, Gestdown, and subf2m for **English and Greek** subtitles, writing `.en.srt` / `.el.srt` alongside each video. Anything it can't find goes into a Wanted queue that it retries on a schedule.
+Bazarr syncs its library from Sonarr and Radarr, then searches OpenSubtitles.com, TVSubtitles, Gestdown, and subf2m for English and Greek subtitles, writing `.en.srt` / `.el.srt` alongside each video. Anything it can't find goes into a Wanted queue that it retries on a schedule.
 
 ![Bazarr](docs/screenshots/bazarr_series.png)
 
 *Subtitle coverage per series, fetched unattended against the EN+GR language profile.*
 
-**Important consequence:** Bazarr only sees content that Sonarr or Radarr have in their libraries. A file dropped into `/media` by hand is invisible to it, so see the workflow section below.
+Important consequence: Bazarr only sees content that Sonarr or Radarr have in their libraries. A file dropped into `/media` by hand is invisible to it, so see the workflow section below.
 
 ### Storage architecture
 
-Three physical disks with clear separation of concerns. Media disks are mounted by **UUID** (not `/dev/sdX`) in `/etc/fstab` with the `nofail` flag, so a disk failure never blocks boot on a headless machine.
+Three physical disks with clear separation of concerns. Media disks are mounted by UUID (not `/dev/sdX`) in `/etc/fstab` with the `nofail` flag, so a disk failure never blocks boot on a headless machine.
 
 ![Storage architecture](docs/screenshots/storage_architecture.png)
 
-Data is treated as disposable (watch-and-delete), so no RAID. The focus is on protecting **configuration**, which is backed up.
+Data is treated as disposable (watch-and-delete), so no RAID. The focus is on protecting configuration, which is backed up.
 
-One trade-off worth naming: because downloads and the library live on **different filesystems**, *arr imports are copies rather than hardlinks. Every import costs real I/O time and holds two copies until the torrent is removed. This is the accepted price of the disk separation, and the watch-and-delete approach keeps it from accumulating.
+One trade-off worth naming: because downloads and the library live on different filesystems, *arr imports are copies rather than hardlinks. Every import costs real I/O time and holds two copies until the torrent is removed. This is the accepted price of the disk separation, and the watch-and-delete approach keeps it from accumulating.
 
 ### Secure remote access (Tailscale)
 
-The entire homelab is reachable from anywhere, whether from the office, mobile data, or traveling, through a **Tailscale mesh VPN** (WireGuard-based). Only the user's own authenticated devices can connect; **nothing is exposed to the public internet**. Subnet routing makes the whole LAN reachable, and Tailscale Serve provides automatic HTTPS with a clean hostname.
+The entire homelab is reachable from anywhere, whether from the office, mobile data, or traveling, through a Tailscale mesh VPN (WireGuard-based). Only the user's own authenticated devices can connect, and nothing is exposed to the public internet. Subnet routing makes the whole LAN reachable, and Tailscale Serve provides automatic HTTPS with a clean hostname.
 
 ### Media workflow
 
 Two paths, both supported, and the choice depends on how much control you want over which release gets grabbed.
 
-**Automated.** Add a series in Sonarr or a film in Radarr, and the stack does the rest: searches every synced indexer, grabs a release, hands it to Deluge under the right label, imports on completion, and lets Bazarr fetch subtitles. Best for ongoing shows, where the weekly grind is the actual pain point.
+Automated. Add a series in Sonarr or a film in Radarr, and the stack does the rest: searches every synced indexer, grabs a release, hands it to Deluge under the right label, imports on completion, and lets Bazarr fetch subtitles. Best for ongoing shows, where the weekly grind is the actual pain point.
 
-**Manual selection with automated handling.** Pick the release yourself in Deluge (a human reading seeder counts still beats an automatic search optimising for quality score), then use **Manual Import** in Sonarr or Radarr to adopt the file. From that point on it's a managed item: organised, tracked, and subtitled like anything else.
+Manual selection with automated handling. Pick the release yourself in Deluge (a human reading seeder counts still beats an automatic search optimising for quality score), then use Manual Import in Sonarr or Radarr to adopt the file. From that point on it's a managed item: organised, tracked, and subtitled like anything else.
 
 Full step-by-step for both is in [`docs/tv-workflow.txt`](docs/tv-workflow.txt).
 
@@ -149,7 +149,7 @@ Full step-by-step for both is in [`docs/tv-workflow.txt`](docs/tv-workflow.txt).
 
 ### Monitoring & backups
 
-A nightly cron job (4 AM) stops the stateful containers, archives all configs and Portainer data, keeps the last 7, and reports success or failure to a **Discord channel**, so a silent backup failure is impossible to miss.
+A nightly cron job (4 AM) stops the stateful containers, archives all configs and Portainer data, keeps the last 7, and reports success or failure to a Discord channel, so a silent backup failure is impossible to miss.
 
 ![Discord backup alerts](docs/screenshots/discord_backup_alert.png)
 
@@ -204,9 +204,9 @@ This repo documents a personal setup; it's not a one-click deploy. To adapt it:
 
 1. Copy each `.env.example` to `.env` and fill in your own values (VPN credentials, tokens, etc.)
 2. Adjust volume paths in the compose files to match your storage
-3. Deploy each stack via Portainer or `docker compose up -d`, running **`arr` before `bazarr`**, since Bazarr expects the `arrnet` network to already exist
+3. Deploy each stack via Portainer or `docker compose up -d`, running `arr` before `bazarr`, since Bazarr expects the `arrnet` network to already exist
 
-Secrets (VPN passwords, API tokens, webhook URLs, auth keys) are **never** committed. They stay local and are excluded via `.gitignore`.
+Secrets (VPN passwords, API tokens, webhook URLs, auth keys) are never committed. They stay local and are excluded via `.gitignore`.
 
 ---
 
